@@ -11,16 +11,16 @@ A partial view of the directory structure expected.
                 `-- bin
 
 1. Edit line (5) of rtems.toolchain file in the top directory to point to the location where the c compiler binaries are located. 
-   It is './development/rtems/4.11/tools/bin'
+   It is './development/rtems/4.11/tools/bin' in this case.
 
 2. Edit line (12) of rtems.toolchain file in the top directory to point to the location of the base directory. It is './development' in this case. If
    You have different configuration, skip this step and point to the bsp install directory and tools directories as below.
 
 3. Edit line (18) of rtems.toolchain file in the top directory to point to the location where rtems-tools are installed. 
-   It is './development/rtems/4.11/tools' in this case;
+   It is './development/rtems/4.11/tools' in this case.
 
 4. Edit line (24) of rtems.toolchain file in the top directory to point to the location where the bsp is installed.
-   It is './development/rtems/4.11/bsps' in this case;
+   It is './development/rtems/4.11/bsps' in this case.
 
 5. Edit the /etc/qemu-ifup to the following :
 
@@ -32,9 +32,9 @@ A partial view of the directory structure expected.
 
 6. The ip gateway of tap is set to 10.1.1.1 to default , and the ip of the browser is hardcoded to 10.1.2.5
 
-7. To build monkey :
+7. To build monkey, cd into the build directory and run :
 
-   cmake .. -DCMAKE_MAKE_FILE=../rtems.toolchain
+   cmake .. -DCMAKE_TOOLCHAIN_FILE=../rtems.toolchain
    make 
 
 8. To run: 
