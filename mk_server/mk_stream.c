@@ -64,13 +64,14 @@ static inline size_t channel_write_stream_file(struct mk_channel *channel,
 
     MK_TRACE("[CH %i] STREAM_FILE %i, bytes=%lu",
              channel->fd, stream->fd, stream->bytes_total);
-
     /* Direct write */
     bytes = mk_sched_conn_sendfile(channel,
                                     stream->fd,
                                     &stream->bytes_offset,
                                     stream->bytes_total
                                     );
+    MK_TRACE("mk_sched_conn_sendfile is CALLED %lu ",bytes);
+
     MK_TRACE("[CH=%d] [FD=%i] WRITE STREAM FILE: %lu bytes",
              channel->fd, stream->fd, bytes);
 

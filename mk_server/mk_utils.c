@@ -39,8 +39,10 @@
 /* stacktrace */
 #include <dlfcn.h>
 #ifndef NO_BACKTRACE
+#ifndef __rtems__
 #include <execinfo.h>
 #endif
+#endif 
 
 #define MK_UTILS_GMT_DATEFORMAT "%a, %d %b %Y %H:%M:%S GMT"
 
@@ -48,6 +50,31 @@
 static const char mk_date_wd[][6]  = {"Sun, ", "Mon, ", "Tue, ", "Wed, ", "Thu, ", "Fri, ", "Sat, "};
 static const char mk_date_ym[][5] = {"Jan ", "Feb ", "Mar ", "Apr ", "May ", "Jun ", "Jul ",
                                      "Aug ", "Sep ", "Oct ", "Nov ", "Dec "};
+
+#if __rtems__
+time_t timegm(struct tm *tm)
+{
+    time_t ret;
+    char *tz;
+
+    tz = getenv("TZ");
+    setenv("TZ", "", 1);
+
+    tzset();
+
+    ret = mktime(tm);
+
+    if (tz)
+        setenv("TZ", tz, 1);
+    else
+        unsetenv("TZ");
+
+    tzset();
+
+    return ret;
+}
+#endif
+
 
 static int mk_utils_gmt_cache_get(char **data, time_t date)
 {
@@ -295,7 +322,7 @@ char *mk_utils_url_decode(mk_ptr_t uri)
     return buf;
 }
 
-#ifdef NO_BACKTRACE
+#if defined(NO_BACKTRACE)||defined(__rtems__)
 void mk_utils_stacktrace(void) {}
 #else
 void mk_utils_stacktrace(void)

@@ -38,6 +38,9 @@ __thread struct mk_server_timeout *server_timeout;
 /* Return the number of clients that can be attended  */
 unsigned int mk_server_capacity()
 {
+#ifdef __rtems__
+    return 64;
+#else
     int ret;
     int cur;
     struct rlimit lim;
@@ -63,6 +66,7 @@ unsigned int mk_server_capacity()
     }
 
     return cur;
+#endif
 }
 
 static inline
@@ -267,6 +271,7 @@ void mk_server_launch_workers()
  */
 void mk_server_loop_balancer()
 {
+MK_TRACE("LOOP BALANCER");
     struct mk_list *head;
     struct mk_list *listeners;
     struct mk_server_listen *listener;
@@ -506,6 +511,7 @@ void mk_server_loop(void)
      * When using REUSEPORT mode on the Scheduler, we need to signal
      * them so they can start processing connections.
      */
+MK_TRACE("%d REUSEPORT", mk_config->scheduler_mode==MK_SCHEDULER_REUSEPORT);
     if (mk_config->scheduler_mode == MK_SCHEDULER_REUSEPORT) {
         /* Hang here, basically do nothing as threads are doing the job  */
         sigset_t mask;

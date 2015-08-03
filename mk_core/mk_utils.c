@@ -321,8 +321,14 @@ int mk_utils_register_pid(char *path)
 
     }
 
+#ifdef __rtems__
+#define MK_UTILS_OPEN_FLAGS ( O_WRONLY | O_CREAT )
+#else
+#define MK_UTILS_OPEN_FLAGS ( O_WRONLY | O_CREAT | O_CLOEXEC )
+#endif
+
     if ((fd = open(path,
-                   O_WRONLY | O_CREAT | O_CLOEXEC, 0444)) < 0) {
+                   MK_UTILS_OPEN_FLAGS, 0444)) < 0) {
         mk_err("Error: I can't log pid of monkey");
         exit(EXIT_FAILURE);
     }

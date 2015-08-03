@@ -109,10 +109,64 @@ int mk_iov_set_entry(struct mk_iov *mk_io, void *buf, int len,
 
     return 0;
 }
+#ifdef __rtems__
+ssize_t mywritev(int fd, const struct iovec *iov, int iovcnt){
+
+int ntot=0,n;
+for(int i=0; i< iovcnt; i++){
+     n = write(fd, iov[i].iov_base, iov[i].iov_len);
+    if (mk_unlikely(n < 0)) {
+        MK_TRACE( "[FD %i] writev() '%s'", fd, strerror(errno));
+        return -1;
+    }
+   ntot+=n;
+}
+
+return ntot;
+}
+
+ssize_t mywritev2(int fd, const struct iovec *vector, int count){
+  char *buffer;
+  char *bp;
+  size_t bytes, to_copy;
+  register size_t i;
+
+  /* Find the total number of bytes to be written.  */
+  bytes = 0;
+  for (i = 0; i < count; ++i)
+    bytes += vector[i].iov_len;
+
+  /* Allocate a temporary buffer to hold the data.  */
+  buffer = (char *) malloc(bytes);
+
+  /* Copy the data into BUFFER.  */
+  to_copy = bytes;
+  bp = buffer;
+  for (i = 0; i < count; ++i)
+    {
+#define	min(a, b)	((a) > (b) ? (b) : (a))
+      size_t copy = min(vector[i].iov_len, to_copy);
+
+      (void) memcpy( bp,  vector[i].iov_base, copy);
+
+      bp += copy;
+      to_copy -= copy;
+      if (bytes == 0)
+	break;
+    }
+
+  return write(fd, buffer, bytes);
+}
+
+#endif
 
 ssize_t mk_iov_send(int fd, struct mk_iov *mk_io)
 {
+#ifdef __rtems__
+    ssize_t n = mywritev(fd, mk_io->io, mk_io->iov_idx);
+#else
     ssize_t n = writev(fd, mk_io->io, mk_io->iov_idx);
+#endif
     if (mk_unlikely(n < 0)) {
         MK_TRACE( "[FD %i] writev() '%s'", fd, strerror(errno));
         return -1;

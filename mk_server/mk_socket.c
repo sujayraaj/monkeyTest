@@ -38,6 +38,7 @@
  */
 int mk_socket_set_cork_flag(int fd, int state)
 {
+return 0;
     MK_TRACE("Socket, set Cork Flag FD %i to %s", fd, (state ? "ON" : "OFF"));
 
 #if defined (TCP_CORK)

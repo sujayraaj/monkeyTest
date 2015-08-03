@@ -1,4 +1,5 @@
 set(src
+  filesystem.c
   monkey.c
   mk_signals.c
   )

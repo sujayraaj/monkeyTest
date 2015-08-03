@@ -26,6 +26,115 @@
 #include "mk_memory.h"
 #include "mk_utils.h"
 
+#include<sys/time.h>
+#include "mk_event.h"
+#include "mk_memory.h"
+#include "mk_utils.h"
+#include <sys/types.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+
+/* work out what fcntl flag to use for non-blocking */
+#ifdef O_NONBLOCK
+# define NONBLOCK_FLAG O_NONBLOCK
+#elif defined(SYSV)
+# define NONBLOCK_FLAG O_NDELAY
+#else 
+# define NONBLOCK_FLAG FNDELAY
+#endif
+
+#define socklen_t int
+
+/****************************************************************************
+Set a fd into nonblocking mode.
+****************************************************************************/
+int set_nonblocking(int fd)
+{
+	int val;
+
+	if((val = fcntl(fd, F_GETFL, 0)) == -1)
+		return -1;
+	if (!(val & NONBLOCK_FLAG)) {
+		val |= NONBLOCK_FLAG;
+		fcntl(fd, F_SETFL, val);
+	}
+	return 0;
+}
+
+/****************************************************************************
+Set a fd into blocking mode.
+****************************************************************************/
+int set_blocking(int fd)
+{
+	int val;
+
+	if((val = fcntl(fd, F_GETFL, 0)) == -1)
+		return -1;
+	if (val & NONBLOCK_FLAG) {
+		val &= ~NONBLOCK_FLAG;
+		fcntl(fd, F_SETFL, val);
+	}
+	return 0;
+}
+
+int socketpair_tcp(int fd[2])
+{
+	int listener;
+	struct sockaddr sock;
+	socklen_t socklen = sizeof(sock);
+	int len = socklen;
+	int one = 1;
+	int connect_done = 0;
+
+	fd[0] = fd[1] = listener = -1;
+
+	memset(&sock, 0, sizeof(sock));
+	
+	if ((listener = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+	setsockopt(listener,SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
+	if (listen(listener, 1) != 0) goto failed;
+
+	if (getsockname(listener, &sock, &socklen) != 0) goto failed;
+
+	if ((fd[1] = socket(PF_INET, SOCK_STREAM, 0)) == -1) goto failed;
+
+	setsockopt(fd[1],SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
+
+	if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) == -1) {
+		if (errno != EINPROGRESS) goto failed;
+                MK_TRACE("ERRNO IS %d",errno==EINPROGRESS);
+	} else {
+		connect_done = 1;
+	}
+
+	set_nonblocking(fd[1]);
+
+        if ((fd[0] = accept(listener, &sock, &len)) == -1) goto failed;
+
+	setsockopt(fd[0],SOL_SOCKET,SO_REUSEADDR,(char *)&one,sizeof(one));
+
+	close(listener);
+	if (connect_done == 0) {
+		if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) != 0) goto failed;
+	}
+
+	set_blocking(fd[1]);
+
+	/* all OK! */
+	return 0;
+
+ failed:
+	if (fd[0] != -1) close(fd[0]);
+	if (fd[1] != -1) close(fd[1]);
+	if (listener != -1) close(listener);
+	return -1;
+}
+
+
 static inline void *_mk_event_loop_create(int size)
 {
     struct mk_event_ctx *ctx;
@@ -200,7 +309,7 @@ static inline int _mk_event_channel_create(struct mk_event_ctx *ctx,
     int fd[2];
     struct mk_event *event;
 
-    ret = pipe(fd);
+    ret = socketpair_tcp(fd);
     if (ret < 0) {
         mk_libc_error("pipe");
         return ret;

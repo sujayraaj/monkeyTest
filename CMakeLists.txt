@@ -5,6 +5,41 @@ project(monkey C)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 set(CMAKE_INCLUDE_DIRECTORIES_BEFORE ON)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "rtems")
+
+  set(ARCH arm )
+  set(BSP xilinx_zynq_a9_qemu )
+  set(BASE "/home/raaj/development" )
+
+  if(NOT DEFINED BASE)
+    message(WARNING "Define RTEMS base directory")
+  endif()
+
+  set(TOOLS_BASE "${BASE}/rtems/4.11/tools" )
+
+  if(NOT DEFINED TOOLS_BASE)
+    message(FATAL_ERROR "Define RTEMS tools directory")
+  endif()
+
+  set(BSPS_BASE "${BASE}/rtems/4.11/bsps" )
+
+  if(NOT DEFINED BSPS_BASE)
+    message(FATAL_ERROR "Define RTEMS bsp directory")
+  endif()
+
+  set(BSP_CFLAGS "-march=armv7-a -mthumb -mfpu=neon -mfloat-abi=hard -mtune=cortex-a9" )
+  set(RTEMS_CFLAGS "${BSP_CFLAGS} -O0 -g -qrtems -B${BSPS_BASE}/${ARCH}-rtems4.11/lib" )
+  set(RTEMS_CFLAGS "${RTEMS_CFLAGS} -B${BSPS_BASE}/${ARCH}-rtems4.11/xilinx_zynq_a9_qemu/lib/" )
+  set(RTEMS_CFLAGS "${RTEMS_CFLAGS} --specs bsp_specs")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${RTEMS_CFLAGS}")
+  add_definitions(-DNET_CFG_SELF_IP="10.1.2.5")
+  add_definitions(-DNET_CFG_NETMASK="255.255.255.0")
+  add_definitions(-DNET_CFG_PEER_IP="10.66.22.175")
+  add_definitions(-DNET_CFG_GATEWAY_IP="10.1.1.1")
+
+endif()
+
+
 # CMake includes
 include(CheckSymbolExists)
 include(CheckLibraryExists)
@@ -27,31 +62,31 @@ set(MK_VERSION_STR "${MK_VERSION_MAJOR}.${MK_VERSION_MINOR}.${MK_VERSION_PATCH}"
 # ============================================
 
 # Project
-option(BUILD_LOCAL         "Build locally, no install"    No)
+option(BUILD_LOCAL         "Build locally, no install"   Yes)
 
 # Monkey Core
 option(WITH_DEBUG          "Build with debug symbols"     No)
 option(WITH_ACCEPT         "Use accept(2) system call"    No)
 option(WITH_ACCEPT4        "Use accept4(2) system call"  Yes)
 option(WITH_LINUX_KQUEUE   "Use Linux kqueue emulator"    No)
-option(WITH_TRACE          "Enable Trace mode"            No)
+option(WITH_TRACE          "Enable Trace mode"           Yes)
 option(WITH_UCLIB          "Enable uClib libc support"    No)
 option(WITH_MUSL           "Enable Musl libc support"     No)
 option(WITH_BACKTRACE      "Enable Backtrace feature"    Yes)
 option(WITH_LINUX_TRACE    "Enable Lttng support"         No)
 option(WITH_PTHREAD_TLS    "Use old Pthread TLS mode"     No)
-option(WITH_SYSTEM_MALLOC  "Use system memory allocator"  No)
+option(WITH_SYSTEM_MALLOC  "Use system memory allocator" Yes)
 
 # Plugins: what should be build ?, these options
 # will be processed later on the plugins/CMakeLists.txt file
-option(WITH_PLUGIN_AUTH          "Basic authentication"    Yes)
-option(WITH_PLUGIN_CGI           "CGI support"             Yes)
-option(WITH_PLUGIN_CHEETAH       "Cheetah Shell Interface" Yes)
-option(WITH_PLUGIN_DIRLISTING    "Directory Listing"       Yes)
-option(WITH_PLUGIN_FASTCGI       "FastCGI"                 Yes)
+option(WITH_PLUGIN_AUTH          "Basic authentication"     No)
+option(WITH_PLUGIN_CGI           "CGI support"              No)
+option(WITH_PLUGIN_CHEETAH       "Cheetah Shell Interface"  No)
+option(WITH_PLUGIN_DIRLISTING    "Directory Listing"        No)
+option(WITH_PLUGIN_FASTCGI       "FastCGI"                  No)
 option(WITH_PLUGIN_LIANA         "Basic network layer"     Yes)
-option(WITH_PLUGIN_LOGGER        "Log Writer"              Yes)
-option(WITH_PLUGIN_MANDRIL       "Security"                Yes)
+option(WITH_PLUGIN_LOGGER        "Log Writer"               No)
+option(WITH_PLUGIN_MANDRIL       "Security"                 No)
 option(WITH_PLUGIN_TLS           "TLS/SSL support"          No)
 
 # Options to build Monkey with/without binary and
@@ -238,10 +273,10 @@ if(BUILD_LOCAL)
   # any component.
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/monkey")
-  set(MK_PATH_CONF     "${CMAKE_CURRENT_BINARY_DIR}/conf/")
-  set(MK_PATH_PIDFILE  "${CMAKE_CURRENT_BINARY_DIR}")
-  set(MK_PATH_WWW      "${CMAKE_CURRENT_SOURCE_DIR}/htdocs/")
-  set(MK_PATH_LOG      "${CMAKE_CURRENT_BINARY_DIR}/log/")
+  set(MK_PATH_CONF     "monktest/conf")
+  set(MK_PATH_PIDFILE  "monktest")
+  set(MK_PATH_WWW      "monktest/htd")
+  set(MK_PATH_LOG      "monktest/log")
   file(MAKE_DIRECTORY  ${MK_PATH_LOG})
 else()
   # Custom SYSCONFDIR

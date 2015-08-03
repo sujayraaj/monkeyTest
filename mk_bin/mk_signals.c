@@ -63,8 +63,13 @@ static void mk_signal_handler(int signo, siginfo_t *si, void *context UNUSED_PAR
 #ifdef DEBUG
         mk_utils_stacktrace();
 #endif
+#ifdef __rtems__
+        mk_err("%s (%d), code=%d",
+               strsignal(signo), signo, si->si_code);
+#else
         mk_err("%s (%d), code=%d, addr=%p",
                strsignal(signo), signo, si->si_code, si->si_addr);
+#endif
         //close(sched->server_fd);
         //pthread_exit(NULL);
         abort();
@@ -80,8 +85,14 @@ void mk_signal_init()
     struct sigaction act;
     memset(&act, 0x0, sizeof(act));
 
+#ifdef __rtems__
+#define MK_SIGNAL_FLAGS SA_SIGINFO
+#else
+#define MK_SIGNAL_FLAGS SA_SIGINFO | SA_NODEFER
+#endif
+
     /* allow signals to be handled concurrently */
-    act.sa_flags = SA_SIGINFO | SA_NODEFER;
+    act.sa_flags = MK_SIGNAL_FLAGS;
     act.sa_sigaction = &mk_signal_handler;
 
     sigaction(SIGSEGV, &act, NULL);

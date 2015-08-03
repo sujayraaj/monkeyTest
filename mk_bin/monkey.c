@@ -19,7 +19,7 @@
 
 #include <monkey/monkey.h>
 #include "mk_signals.h"
-
+#include <monkey/rtems-network-init.h>
 #include <getopt.h>
 
 #if defined(__DATE__) && defined(__TIME__)
@@ -100,13 +100,17 @@ static void mk_help(int rc)
 }
 
 /* MAIN */
+#if defined(__rtems__)
+int monkey_main(int argc, char **argv)
+#else
 int main(int argc, char **argv)
+#endif
 {
     int opt;
     char *port_override = NULL;
     int workers_override = -1;
     int run_daemon = 0;
-    int balancing_mode = MK_FALSE;
+    int balancing_mode = MK_TRUE;
     int allow_shared_sockets = MK_FALSE;
     char *one_shot = NULL;
     char *pid_file = NULL;
@@ -268,12 +272,14 @@ int main(int argc, char **argv)
 
     /* Override some configuration */
     mk_config->one_shot = one_shot;
-    mk_config->port_override = port_override;
+    mk_config->port_override = "80"; 
+//port_override;
     mk_config->transport_layer = transport_layer;
 
     mk_version();
     mk_signal_init();
-
+    workers_override=8;
+    balancing_mode=MK_TRUE;
     /* Override number of thread workers */
     if (workers_override >= 0) {
         mk_config->workers = workers_override;
@@ -281,11 +287,10 @@ int main(int argc, char **argv)
     else {
         mk_config->workers = -1;
     }
-
     if (balancing_mode == MK_TRUE) {
+        printf("btajdfhdjgtjaajafdjfdjdjdhkdghkdfsgjadfhdfhdfgjgjsfkfhkfh");
         mk_config->scheduler_mode = MK_SCHEDULER_FAIR_BALANCING;
     }
-
 
     /* Running Monkey as daemon */
     if (mk_config->is_daemon == MK_TRUE) {
@@ -298,22 +303,22 @@ int main(int argc, char **argv)
         mk_warn("Some Listen interface is busy, re-try using -T. Aborting.");
         exit(EXIT_FAILURE);
     }
-
     /*
      * Once the all configuration is set, let mk_server configure the
      * internals. Not accepting connections yet.
      */
     mk_server_setup();
 
+#ifndef __rtems__
     /* Register PID of Monkey */
     mk_utils_register_pid(mk_config->pid_file_path);
-
+#endif
     /* Print server details */
     mk_server_info();
-
+#ifndef __rtems__
     /* Change process owner */
     mk_user_set_uidgid();
-
+#endif
     /* Server loop, let's listen for incomming clients */
     mk_server_loop();
 

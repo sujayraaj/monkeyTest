@@ -35,6 +35,7 @@ void mk_server_info()
         l = mk_list_entry(head, struct mk_config_listener, _head);
         printf(MK_BANNER_ENTRY "Server listening on %s:%s\n",
                l->address, l->port);
+
     }
     printf(MK_BANNER_ENTRY
            "%i threads, may handle up to %i client connections\n",
