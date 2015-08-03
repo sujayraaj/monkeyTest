@@ -272,14 +272,12 @@ int main(int argc, char **argv)
 
     /* Override some configuration */
     mk_config->one_shot = one_shot;
-    mk_config->port_override = "80"; 
-//port_override;
+    mk_config->port_override = port_override;
     mk_config->transport_layer = transport_layer;
 
     mk_version();
     mk_signal_init();
     workers_override=8;
-    balancing_mode=MK_TRUE;
     /* Override number of thread workers */
     if (workers_override >= 0) {
         mk_config->workers = workers_override;
@@ -288,7 +286,6 @@ int main(int argc, char **argv)
         mk_config->workers = -1;
     }
     if (balancing_mode == MK_TRUE) {
-        printf("btajdfhdjgtjaajafdjfdjdjdhkdghkdfsgjadfhdfhdfgjgjsfkfhkfh");
         mk_config->scheduler_mode = MK_SCHEDULER_FAIR_BALANCING;
     }
 
